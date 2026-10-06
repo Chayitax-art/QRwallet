@@ -985,11 +985,33 @@ function encAddr(a){return pad64(a.toLowerCase());}
 function encUint(v){return BigInt(v).toString(16).padStart(64,"0");}
 function format18(v){v=BigInt(v);const b=10n**DECIMALS,w=v/b,f=(v%b).toString().padStart(18,"0").replace(/0+$/,"");return f?`${w}.${f}`:w.toString();}
 
+function normalizeChainId(value){
+ // Algunos proveedores/wrappers pueden devolver string, number, bigint
+ // o un objeto con result/chainId. Normalizamos todo a número.
+ if(value && typeof value === "object"){
+  if("result" in value) value=value.result;
+  else if("chainId" in value) value=value.chainId;
+ }
+ if(typeof value === "bigint") return Number(value);
+ if(typeof value === "number") return value;
+ if(typeof value === "string"){
+  const s=value.trim();
+  if(!s) return NaN;
+  return s.toLowerCase().startsWith("0x") ? parseInt(s,16) : parseInt(s,10);
+ }
+ return NaN;
+}
+
 async function ensureBSC(){
- const id=await rpc("eth_chainId");
- if(id.toLowerCase()===BSC_CHAIN_ID)return;
- try{await rpc("wallet_switchEthereumChain",[{chainId:BSC_CHAIN_ID}]);}
- catch(e){
+ const rawId=await rpc("eth_chainId");
+ const chainNumber=normalizeChainId(rawId);
+ console.log("eth_chainId bruto:",rawId,"normalizado:",chainNumber);
+
+ if(chainNumber===56)return;
+
+ try{
+  await rpc("wallet_switchEthereumChain",[{chainId:BSC_CHAIN_ID}]);
+ }catch(e){
   if(e?.code!==4902)throw e;
   await rpc("wallet_addEthereumChain",[{
    chainId:BSC_CHAIN_ID,chainName:"BNB Smart Chain",
@@ -998,6 +1020,9 @@ async function ensureBSC(){
    blockExplorerUrls:["https://bscscan.com/"]
   }]);
  }
+
+ const after=normalizeChainId(await rpc("eth_chainId"));
+ if(after!==56) throw new Error("Trust Wallet no quedó conectado a BNB Smart Chain.");
 }
 async function balanceOf(owner){
  const data="0x70a08231"+encAddr(owner);
@@ -1085,4 +1110,3 @@ if(maxAction)maxAction.addEventListener("click",async()=>{
 
 </body>
 </html>
-
