@@ -839,13 +839,13 @@
 
         <div id="tronNetworkInfo" class="network-card">
             <img
-                src="https://cryptologos.cc/logos/tron-trx-logo.png"
-                alt="TRON"
+                src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/icon/bnb.png"
+                alt="BNB"
                 class="network-card-logo"
             >
             <div class="network-card-copy">
                 <span class="network-card-label">Red conectada</span>
-                <span class="network-card-name">TRON</span>
+                <span class="network-card-name">BNB Smart Chain</span>
             </div>
             <span class="network-card-badge">BEP-20</span>
         </div>
@@ -1053,7 +1053,7 @@ connectBtn.addEventListener("click",async()=>{
    if(!walletAddress)throw new Error("No se obtuvo acceso a la dirección.");
    if(walletAddressText)walletAddressText.textContent=`${walletAddress.slice(0,8)}...${walletAddress.slice(-6)}`;
    if(walletInfo)walletInfo.style.display="block";
-   if(networkInfo){networkInfo.style.display="flex";networkInfo.innerHTML=networkInfo.innerHTML.replace(/TRON/gi,"BNB Smart Chain").replace(/BEP-20/gi,"BEP-20");}
+   if(networkInfo){networkInfo.style.display="flex";}
    if(maxAction)maxAction.style.display="inline";
    setStatus("Conexión establecida. Presione continuar.");
    connectBtn.innerText="Continuar";
