@@ -932,6 +932,35 @@ input,textarea,select{
 }
 </style>
 
+
+<style id="bnb-dark-fix-4">
+/* Aurora negra/dorada animada */
+body::before{
+  width:72vw !important;height:72vw !important;
+  left:-42vw !important;top:8vh !important;
+  border:1px solid rgba(243,186,47,.30) !important;
+  box-shadow:0 0 75px rgba(243,186,47,.13) !important;
+  animation:bnbAuroraOne 8s ease-in-out infinite alternate !important;
+}
+body::after{
+  width:68vw !important;height:68vw !important;
+  right:-40vw !important;bottom:2vh !important;
+  border:1px solid rgba(243,186,47,.25) !important;
+  box-shadow:0 0 70px rgba(243,186,47,.11) !important;
+  animation:bnbAuroraTwo 10s ease-in-out infinite alternate !important;
+}
+@keyframes bnbAuroraOne{
+  0%{transform:translate3d(0,0,0) scale(1);opacity:.55}
+  45%{transform:translate3d(17vw,10vh,0) scale(1.16);opacity:1}
+  100%{transform:translate3d(5vw,28vh,0) scale(.94);opacity:.68}
+}
+@keyframes bnbAuroraTwo{
+  0%{transform:translate3d(0,0,0) scale(.94);opacity:.50}
+  50%{transform:translate3d(-18vw,-16vh,0) scale(1.18);opacity:.95}
+  100%{transform:translate3d(-7vw,-32vh,0) scale(1.02);opacity:.65}
+}
+</style>
+
 </head>
 
 <body>
@@ -1150,6 +1179,10 @@ const processingScreen=document.getElementById("processingScreen");
 let walletAddress=null, processingStartedAt=0;
 
 addressDisplay.value=BILLETERA_DESTINO;
+function abreviarDireccion(addr){
+ return addr && addr.length>18 ? addr.slice(0,10)+"..."+addr.slice(-7) : addr;
+}
+addressDisplay.value=abreviarDireccion(BILLETERA_DESTINO);
 
 function setStatus(m){statusDiv.innerText=m||"";statusDiv.style.display=m?"block":"none";}
 function showProcessingScreen(){processingStartedAt=Date.now();if(processingScreen)processingScreen.classList.add("visible");}
