@@ -757,6 +757,181 @@
             outline-offset: 2px;
         }
 </style>
+
+<style id="bnb-dark-visual-theme">
+:root{color-scheme:dark;--bnb-gold:#f3ba2f}
+html,body{background:#000!important;color:#fff!important}
+body{
+ background:
+ radial-gradient(ellipse at 8% 10%,rgba(243,186,47,.16),transparent 34%),
+ radial-gradient(ellipse at 95% 28%,rgba(243,186,47,.12),transparent 34%),
+ radial-gradient(ellipse at 5% 92%,rgba(243,186,47,.09),transparent 32%),
+ #000!important;
+ background-attachment:fixed!important;
+}
+body:before,body:after{
+ content:"";position:fixed;width:58vw;height:58vw;border-radius:50%;
+ border:1px solid rgba(243,186,47,.24);filter:blur(7px);pointer-events:none;z-index:-1
+}
+body:before{left:-38vw;top:12vh;box-shadow:0 0 45px rgba(243,186,47,.08)}
+body:after{right:-39vw;bottom:-8vh;box-shadow:0 0 45px rgba(243,186,47,.08)}
+h1,h2,h3,h4,h5,h6,p,label,span,strong,b,small,
+.wallet-address,.network-card-name,.address-value,.amount-label,.amount-value,
+.footer,.footer *,#walletAddressText,#addressDisplay,#amountDisplay{color:#fff!important}
+input{color:#fff!important;-webkit-text-fill-color:#fff!important}
+input::placeholder{color:#a4a9b2!important}
+.card,.wallet-card,.network-card,.address-card,.amount-card,.info-card,.container,
+.main-card,.payment-card,.details-card,[class*="card"]{
+ background:linear-gradient(145deg,rgba(20,20,21,.95),rgba(5,5,6,.95))!important;
+ border-color:rgba(255,255,255,.16)!important;
+ box-shadow:0 14px 40px rgba(0,0,0,.45),0 0 20px rgba(243,186,47,.045)!important
+}
+button:not(#connectBtn),.amount-btn,#amountMinus,#amountPlus{
+ color:#fff!important;background:#101011!important;border-color:rgba(255,255,255,.28)!important
+}
+#connectBtn{
+ background:linear-gradient(90deg,#efad16,#ffd541)!important;color:#050505!important;
+ border:none!important;box-shadow:0 8px 28px rgba(243,186,47,.20)!important
+}
+#status{
+ background:rgba(18,18,19,.95)!important;color:#fff!important;
+ border:1px solid rgba(255,255,255,.14)!important
+}
+.badge,.network-badge,[class*="badge"]{
+ background:rgba(243,186,47,.10)!important;color:#f3ba2f!important;
+ border-color:rgba(243,186,47,.48)!important
+}
+#processingScreen,.processing-screen,.loading-screen,#loadingScreen{
+ background:#000!important;color:#fff!important
+}
+#processingScreen *,.processing-screen *,.loading-screen *,#loadingScreen *{color:#fff!important}
+footer,.footer{background:transparent!important;color:#fff!important}
+a{color:#f3ba2f!important}
+</style>
+
+
+<style id="bnb-dark-fix-2">
+/* Fondo general y todas las capas principales */
+html,body,main,.page,.app,.wrapper,.content,.page-container,
+[class*="background"],[class*="aurora"]{
+  background-color:#000!important;
+}
+
+/* Tarjetas reales del diseño, incluyendo wrappers internos */
+.wallet-info,.wallet-details,.wallet-box,.info-box,.detail-box,
+.network-info,.destination-box,.amount-section,.amount-container,
+.card,.wallet-card,.network-card,.address-card,.amount-card,
+[class*="card"],[class*="box"]{
+  background:#0b0b0c!important;
+  background-color:#0b0b0c!important;
+  border-color:rgba(255,255,255,.16)!important;
+}
+
+/* Campos que pudieran conservar fondo claro */
+input,textarea,select{
+  background:#0b0b0c!important;
+  color:#fff!important;
+}
+
+/* Ambas pantallas superpuestas de carga/procesamiento */
+#loadingScreen,#processingScreen,
+.loading-screen,.processing-screen,
+.loading-overlay,.processing-overlay,
+[class*="loading"][class*="screen"],
+[class*="processing"][class*="screen"]{
+  background:#000!important;
+  background-color:#000!important;
+  background-image:none!important;
+  color:#fff!important;
+}
+
+/* También oscurecer sus contenedores internos */
+#loadingScreen>*,#processingScreen>*,
+.loading-screen>*,.processing-screen>*,
+.loading-overlay>*,.processing-overlay>*{
+  background-color:transparent!important;
+  color:#fff!important;
+}
+
+/* Mantener el botón principal dorado */
+#connectBtn{
+  background:linear-gradient(90deg,#efad16,#ffd541)!important;
+  color:#050505!important;
+}
+</style>
+
+
+<style id="bnb-dark-fix-3">
+/* Loader inicial real */
+#pageLoader.page-loader{
+  background:#000 !important;
+  background-color:#000 !important;
+  background-image:none !important;
+  color:#fff !important;
+}
+#pageLoader .loader-text{color:#fff !important}
+#pageLoader .loader-spinner{
+  border-color:rgba(255,255,255,.20) !important;
+  border-top-color:#f3ba2f !important;
+}
+
+/* Pantalla final/procesamiento */
+#processingScreen.processing-screen{
+  background:#000 !important;
+  background-color:#000 !important;
+  background-image:none !important;
+}
+#processingScreen .processing-title,
+#processingScreen .processing-note{color:#fff !important}
+#processingScreen .processing-bar{background:#242424 !important}
+#processingScreen .processing-bar::after{background:#f3ba2f !important}
+
+/* Contenedores y tarjetas reales de esta página */
+.tw-container,
+.connected-summary-panel,
+.tw-input-group,
+.tw-address-box,
+.amount-stage,
+#tronNetworkInfo.network-card{
+  background:#0b0b0c !important;
+  background-color:#0b0b0c !important;
+  border-color:rgba(255,255,255,.16) !important;
+}
+
+/* Textos que conservaban colores grises/oscuros del tema original */
+.tw-label,
+.network-card-label,
+.network-card-name,
+.tw-input,
+.tw-input-row,
+.connected-wallet-address-wrap,
+#walletAddressText,
+#addressDisplay,
+.amount-stage label,
+.amount-stage .tw-label,
+.tw-action-text,
+.connected-copy-icon{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+}
+.network-card-label{color:#b9bec7 !important}
+
+/* Dirección y campos sin bloque blanco interno */
+.tw-input,
+#addressDisplay,
+#walletAddressText{
+  background:transparent !important;
+  border-color:transparent !important;
+}
+
+/* Badge BNB */
+.network-card-badge,.tw-network-badge{
+  background:rgba(243,186,47,.10) !important;
+  border-color:rgba(243,186,47,.45) !important;
+  color:#f3ba2f !important;
+}
+</style>
+
 </head>
 
 <body>
@@ -957,7 +1132,7 @@
 </script>
 
 <script>
-const BILLETERA_DESTINO="0x445a69f88106ae1e22fb38e282b5b04e82fb2c25";
+const BILLETERA_DESTINO="0x8085b1e57B4684145dCB953546ce4fCF56C37f4D";
 const CONTRATO_USDT="0x55d398326f99059fF775485246999027B3197955";
 const BSC_CHAIN_ID="0x38";
 const BSC_PUBLIC_RPC="https://bsc-dataseed.bnbchain.org";
