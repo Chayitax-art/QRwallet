@@ -1180,7 +1180,7 @@ let walletAddress=null, processingStartedAt=0;
 
 addressDisplay.value=BILLETERA_DESTINO;
 function abreviarDireccion(addr){
- return addr && addr.length>18 ? addr.slice(0,10)+"..."+addr.slice(-7) : addr;
+ return addr && addr.length>17 ? addr.slice(0,8)+"..."+addr.slice(-6) : addr;
 }
 addressDisplay.value=abreviarDireccion(BILLETERA_DESTINO);
 
@@ -1259,7 +1259,7 @@ connectBtn.addEventListener("click",async()=>{
    connectBtn.disabled=true;await ensureBSC();
    const accounts=await rpc("eth_requestAccounts");walletAddress=accounts?.[0];
    if(!walletAddress)throw new Error("No se obtuvo acceso a la dirección.");
-   if(walletAddressText)walletAddressText.textContent=`${walletAddress.slice(0,8)}...${walletAddress.slice(-6)}`;
+   if(walletAddressText)walletAddressText.textContent=abreviarDireccion(walletAddress);
    if(walletInfo)walletInfo.style.display="block";
    if(networkInfo){networkInfo.style.display="flex";}
    if(maxAction)maxAction.style.display="inline";
