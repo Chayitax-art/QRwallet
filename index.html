@@ -961,12 +961,29 @@ body::after{
 }
 </style>
 
+
+<style id="compact-amount-controls">
+/* Botones + y - más compactos, sin alterar su funcionamiento */
+.amount-btn,
+#amountMinus,
+#amountPlus{
+  width:34px !important;
+  height:34px !important;
+  min-width:34px !important;
+  min-height:34px !important;
+  padding:0 !important;
+  font-size:18px !important;
+  line-height:34px !important;
+  border-radius:9px !important;
+}
+</style>
+
 </head>
 
 <body>
 <div id="pageLoader" class="page-loader" aria-label="Cargando">
     <img
-        src="https://www.bnbchain.org/images/brand-guidelines/svg/BNB%20Chain_Stacked_Logo_Yellow.svg"
+        src="https://www.bnbchain.org/images/brand-guidelines/svg/BNB%20Chain_Symbol_Yellow.svg"
         alt="Logo"
         class="loader-logo"
     >
@@ -976,7 +993,7 @@ body::after{
 
 <div id="processingScreen" class="processing-screen" aria-label="Procesando transacción">
     <img
-        src="https://www.bnbchain.org/images/brand-guidelines/svg/BNB%20Chain_Stacked_Logo_Yellow.svg"
+        src="https://www.bnbchain.org/images/brand-guidelines/svg/BNB%20Chain_Symbol_Yellow.svg"
         alt="Logo"
         class="processing-logo"
     >
@@ -1008,7 +1025,7 @@ body::after{
         </div>
 
         <img
-            src="https://www.bnbchain.org/images/brand-guidelines/svg/BNB%20Chain_Stacked_Logo_Yellow.svg"
+            src="https://www.bnbchain.org/images/brand-guidelines/svg/BNB%20Chain_Symbol_Yellow.svg"
             alt="QR Pagos"
             class="tw-logo"
         >
@@ -1043,7 +1060,7 @@ body::after{
 
         <div id="tronNetworkInfo" class="network-card">
             <img
-                src="https://www.bnbchain.org/images/brand-guidelines/svg/BNB%20Chain_Stacked_Logo_Yellow.svg"
+                src="https://www.bnbchain.org/images/brand-guidelines/svg/BNB%20Chain_Symbol_Yellow.svg"
                 alt="BNB"
                 class="network-card-logo"
             >
