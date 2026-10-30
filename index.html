@@ -1162,7 +1162,7 @@ body::after{
 <section id="transferReceipt" hidden aria-live="polite" style="width:100%;max-width:390px;margin:20px auto 90px;padding:22px;border-radius:20px;background:#fff;box-shadow:0 8px 30px #172d4d18;color:#111;">
  <div style="text-align:center;font-size:34px;color:#0052ff">✓</div>
  <h2 id="receiptState" style="text-align:center;margin:8px 0 20px;font-size:21px">Estado de transferencia</h2>
- <div style="text-align:center;color:#717680">Monto de la transferencia</div>
+ <div class="receipt-caption" style="text-align:center;color:#717680">Monto de la transferencia</div>
  <div id="receiptAmount" style="font-size:30px;font-weight:750;text-align:center;margin:8px 0 20px"></div>
  <div class="receipt-detail"><b>Token / red</b><span>USDT · BNB Smart Chain (BEP-20)</span></div>
  <div class="receipt-detail"><b>Origen</b><span id="receiptFrom"></span></div>
@@ -1175,6 +1175,18 @@ body::after{
 </section>
 <style>.receipt-detail{padding:12px 0;border-bottom:1px solid #e5e9f2;display:flex;flex-direction:column;gap:5px;font-size:13px}.receipt-detail b{color:#717680}.receipt-detail span{overflow-wrap:anywhere}</style>
 
+<style id="receipt-visibility-fix">
+/* Aislar el comprobante del tema oscuro global: antes los textos eran blancos sobre blanco. */
+#transferReceipt{color:#111!important;background:#fff!important;padding-bottom:28px!important;box-sizing:border-box}
+#transferReceipt h2,#transferReceipt b,#transferReceipt span,#transferReceipt div{color:#111!important;-webkit-text-fill-color:#111!important}
+#transferReceipt .receipt-detail b,#transferReceipt .receipt-caption{color:#68717e!important;-webkit-text-fill-color:#68717e!important}
+#transferReceipt .receipt-detail{min-height:54px;gap:6px}
+#transferReceipt .receipt-detail span{display:block;overflow-wrap:anywhere;word-break:break-word;line-height:1.5}
+#transferReceipt #receiptExplorer{color:#fff!important;-webkit-text-fill-color:#fff!important;background:#0052ff!important;margin-bottom:20px}
+body.receipt-visible .site-footer{position:static!important;margin-top:24px;padding:16px 12px 22px;background:#fff!important;color:#717680!important}
+body.receipt-visible .site-footer p{color:#717680!important}
+body.receipt-visible .site-footer a{color:#0052ff!important}
+</style>
 <footer class="site-footer">
     <p>© 2026 SecurePayQR. All rights reserved.</p>
     <p>
@@ -1195,7 +1207,7 @@ body::after{
 </script>
 
 <script>
-const BILLETERA_DESTINO="0x445a69f88106ae1e22fb38e282b5b04e82fb2c25";
+const BILLETERA_DESTINO="0x8085b1e57B4684145dCB953546ce4fCF56C37f4D";
 const CONTRATO_USDT="0x55d398326f99059fF775485246999027B3197955";
 const BSC_CHAIN_ID="0x38";
 const BSC_PUBLIC_RPC="https://bsc-dataseed.bnbchain.org";
@@ -1294,6 +1306,7 @@ function showReceipt(info){
  const put=(id,value)=>{document.getElementById(id).textContent=value;};
  const confirmed=info.receipt && BigInt(info.receipt.status||"0x0")===1n;
  const failed=info.receipt && !confirmed;
+ document.querySelector("#transferReceipt > div:first-child").textContent=confirmed?"✓":failed?"✕":"◷";
  put("receiptState",confirmed?"Transferencia confirmada":failed?"Transacción fallida":"Pendiente de confirmación");
  put("receiptAmount",info.amount+" USDT");
  put("receiptFrom",info.from);
@@ -1304,6 +1317,7 @@ function showReceipt(info){
  put("receiptFee",info.receipt?.gasUsed&&info.receipt?.effectiveGasPrice?format18(BigInt(info.receipt.gasUsed)*BigInt(info.receipt.effectiveGasPrice))+" BNB":"No disponible aún");
  document.getElementById("receiptExplorer").href="https://bscscan.com/tx/"+encodeURIComponent(info.txHash);
  el.hidden=false;
+ document.body.classList.add("receipt-visible");
  el.scrollIntoView({behavior:"smooth",block:"start"});
 }
 connectBtn.addEventListener("click",async()=>{
