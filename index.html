@@ -1276,27 +1276,31 @@ function normalizeChainId(value){
 }
 
 async function ensureBSC(){
- const rawId=await rpc("eth_chainId");
- const chainNumber=normalizeChainId(rawId);
- console.log("eth_chainId bruto:",rawId,"normalizado:",chainNumber);
-
- if(chainNumber===56)return;
-
+ const current=normalizeChainId(await rpc("eth_chainId"));
+ if(current===56)return true;
  try{
   await rpc("wallet_switchEthereumChain",[{chainId:BSC_CHAIN_ID}]);
  }catch(e){
-  if(e?.code!==4902)throw e;
-  await rpc("wallet_addEthereumChain",[{
-   chainId:BSC_CHAIN_ID,chainName:"BNB Smart Chain",
-   nativeCurrency:{name:"BNB",symbol:"BNB",decimals:18},
-   rpcUrls:["https://bsc-dataseed.binance.org/"],
-   blockExplorerUrls:["https://bscscan.com/"]
-  }]);
+  const code=Number(e?.code ?? e?.data?.originalError?.code);
+  if(code!==4902)throw e;
+  try{
+   await rpc("wallet_addEthereumChain",[{
+    chainId:BSC_CHAIN_ID,
+    chainName:"BNB Smart Chain",
+    nativeCurrency:{name:"BNB",symbol:"BNB",decimals:18},
+    rpcUrls:["https://bsc-dataseed.bnbchain.org"],
+    blockExplorerUrls:["https://bscscan.com"]
+   }]);
+  }catch(addError){
+   console.warn("Trust Wallet no permitió agregar la red:",addError);
+   throw new Error("La billetera está vinculada, pero no se pudo seleccionar BNB Smart Chain. Elegí BNB Smart Chain (Chain ID 56) en el selector de redes del navegador dApp y volvé a pulsar Continuar.");
+  }
  }
-
  const after=normalizeChainId(await rpc("eth_chainId"));
- if(after!==56) throw new Error("Trust Wallet no quedó conectado a BNB Smart Chain.");
+ if(after!==56)throw new Error("La billetera está vinculada, pero la red activa no es BNB Smart Chain (56). Seleccionala en Trust Wallet antes de continuar.");
+ return true;
 }
+
 async function publicRpc(method,params=[]){
  const response=await fetch(BSC_PUBLIC_RPC,{
   method:"POST",
@@ -1345,22 +1349,32 @@ connectBtn.addEventListener("click",async()=>{
    connectBtn.disabled=true;
    const accounts=await rpc("eth_requestAccounts");
    if(!accounts?.[0])throw new Error("No se obtuvo acceso a la dirección.");
-   setStatus("Verificando BNB Smart Chain...");
-   await ensureBSC();
    walletAddress=accounts[0];
    if(!walletAddress)throw new Error("No se obtuvo acceso a la dirección.");
    if(walletAddressText)walletAddressText.textContent=abreviarDireccion(walletAddress);
    if(walletInfo)walletInfo.style.display="block";
-   if(networkInfo){networkInfo.style.display="flex";}
+   if(networkInfo){networkInfo.style.display="none";}
    if(maxAction)maxAction.style.display="inline";
-   setStatus("Conexión establecida. Presione continuar.");
    connectBtn.innerText="Continuar";
+   try{
+    const chain=normalizeChainId(await rpc("eth_chainId"));
+    if(chain===56){
+     if(networkInfo)networkInfo.style.display="flex";
+     setStatus("Billetera vinculada en BNB Smart Chain. Podés continuar.");
+    }else{
+     setStatus("Billetera vinculada. La red activa no es BNB Smart Chain (56). Seleccioná esa red antes de transferir.");
+    }
+   }catch(networkError){
+    console.warn("No se pudo leer la red:",networkError);
+    setStatus("Billetera vinculada. No se pudo verificar la red; seleccioná BNB Smart Chain antes de continuar.");
+   }
   }catch(e){console.error("Error al conectar:",e);setStatus(walletErrorMessage(e));}
   finally{connectBtn.disabled=false;}
   return;
  }
  try{
   connectBtn.disabled=true;await ensureBSC();
+  if(networkInfo)networkInfo.style.display="flex";
   console.log("ETAPA: lectura de saldo por RPC público");
   const balance=await balanceOf(walletAddress);
   console.log("ETAPA OK: lectura de saldo");
