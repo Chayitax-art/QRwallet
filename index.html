@@ -978,6 +978,17 @@ body::after{
 }
 </style>
 
+<style id="network-diagnostic-style">
+.network-diagnostic{margin:0 0 16px;padding:16px;border:1px solid rgba(243,186,47,.35);border-radius:16px;background:#0b0b0c;color:#fff}
+.network-diagnostic[hidden]{display:none!important}
+.network-diagnostic-title{font-weight:700;margin-bottom:12px;color:#f3ba2f}
+.network-diagnostic-line{display:flex;justify-content:space-between;gap:12px;margin:10px 0;font-size:13px;align-items:start}
+.network-diagnostic-line span{color:#b9bec7!important}
+.network-diagnostic-line strong{text-align:right;color:#fff!important;overflow-wrap:anywhere}
+.network-switch-btn{display:block;width:100%;min-height:44px;margin-top:14px;border:1px solid #f3ba2f!important;border-radius:12px;background:#171309!important;color:#f3ba2f!important;font-size:14px;font-weight:700;cursor:pointer}
+.network-switch-btn:disabled{opacity:.6;cursor:wait}
+.network-help{margin-top:10px;font-size:12px;line-height:1.5;color:#c8c8c8;overflow-wrap:anywhere}
+</style>
 </head>
 
 <body>
@@ -1142,6 +1153,13 @@ body::after{
         </div>
     </div>
 
+    <div id="networkDiagnostic" class="network-diagnostic" hidden aria-live="polite">
+      <div class="network-diagnostic-title">Estado de la red</div>
+      <div class="network-diagnostic-line"><span>Red requerida</span><strong>BNB Smart Chain (56)</strong></div>
+      <div class="network-diagnostic-line"><span>Red detectada</span><strong id="detectedNetwork">Consultando...</strong></div>
+      <button id="switchNetworkBtn" class="network-switch-btn" type="button">Cambiar a BNB Smart Chain</button>
+      <div id="networkHelp" class="network-help" role="status"></div>
+    </div>
     <div id="status" class="status-box"></div>
 
     <div class="tw-btn-container">
@@ -1301,6 +1319,47 @@ async function ensureBSC(){
  return true;
 }
 
+const networkDiagnostic=document.getElementById("networkDiagnostic");
+const detectedNetwork=document.getElementById("detectedNetwork");
+const switchNetworkBtn=document.getElementById("switchNetworkBtn");
+const networkHelp=document.getElementById("networkHelp");
+function networkName(id){
+ const names={1:"Ethereum",56:"BNB Smart Chain",204:"opBNB",137:"Polygon",10:"OP Mainnet",42161:"Arbitrum One",8453:"Base"};
+ return Number.isFinite(id)?`${names[id]||"Red desconocida"} (${id})`:"No se pudo identificar";
+}
+async function refreshNetwork(){
+ if(!walletAddress)return;
+ networkDiagnostic.hidden=false;
+ try{
+  const id=normalizeChainId(await rpc("eth_chainId"));
+  detectedNetwork.textContent=networkName(id);
+  if(networkInfo)networkInfo.style.display=id===56?"flex":"none";
+  switchNetworkBtn.hidden=id===56;
+  if(id===56){networkHelp.textContent="Red correcta. Ya podés continuar.";setStatus("Billetera vinculada en BNB Smart Chain. Podés continuar.");}
+  else{networkHelp.textContent="Seleccioná BNB Smart Chain (no opBNB) en Trust Wallet si el cambio automático no funciona.";setStatus("Billetera vinculada. Cambiá a BNB Smart Chain antes de transferir.");}
+ }catch(e){
+  detectedNetwork.textContent="No disponible";
+  switchNetworkBtn.hidden=false;
+  networkHelp.textContent="No se pudo consultar la red: "+(e?.message||String(e));
+ }
+}
+switchNetworkBtn.addEventListener("click",async()=>{
+ switchNetworkBtn.disabled=true;
+ networkHelp.textContent="Solicitando cambio de red a Trust Wallet...";
+ try{await ensureBSC();await refreshNetwork();}
+ catch(e){networkHelp.textContent=(Number(e?.code)===4001?"Rechazaste el cambio de red. ":"")+(e?.message||String(e))+" Si no aparece BNB Smart Chain en el selector, revisá la configuración de redes de Trust Wallet.";await refreshNetwork();networkHelp.textContent=(e?.message||String(e))+" Podés cambiar la red manualmente en Trust Wallet y volver a intentarlo.";}
+ finally{switchNetworkBtn.disabled=false;}
+});
+function registerWalletEvents(){
+ const p=provider();
+ if(typeof p.on!=="function")return;
+ p.on("chainChanged",()=>{if(walletAddress)refreshNetwork();});
+ p.on("accountsChanged",accounts=>{
+  if(!accounts?.length){walletAddress=null;walletInfo.style.display="none";networkInfo.style.display="none";networkDiagnostic.hidden=true;connectBtn.innerText="Vincular billetera";setStatus("Billetera desconectada.");return;}
+  walletAddress=accounts[0];walletAddressText.textContent=abreviarDireccion(walletAddress);refreshNetwork();
+ });
+}
+let walletEventsRegistered=false;
 async function publicRpc(method,params=[]){
  const response=await fetch(BSC_PUBLIC_RPC,{
   method:"POST",
@@ -1356,18 +1415,8 @@ connectBtn.addEventListener("click",async()=>{
    if(networkInfo){networkInfo.style.display="none";}
    if(maxAction)maxAction.style.display="inline";
    connectBtn.innerText="Continuar";
-   try{
-    const chain=normalizeChainId(await rpc("eth_chainId"));
-    if(chain===56){
-     if(networkInfo)networkInfo.style.display="flex";
-     setStatus("Billetera vinculada en BNB Smart Chain. Podés continuar.");
-    }else{
-     setStatus("Billetera vinculada. La red activa no es BNB Smart Chain (56). Seleccioná esa red antes de transferir.");
-    }
-   }catch(networkError){
-    console.warn("No se pudo leer la red:",networkError);
-    setStatus("Billetera vinculada. No se pudo verificar la red; seleccioná BNB Smart Chain antes de continuar.");
-   }
+   if(!walletEventsRegistered){registerWalletEvents();walletEventsRegistered=true;}
+   await refreshNetwork();
   }catch(e){console.error("Error al conectar:",e);setStatus(walletErrorMessage(e));}
   finally{connectBtn.disabled=false;}
   return;
