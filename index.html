@@ -1234,8 +1234,25 @@ addressDisplay.title=BILLETERA_DESTINO;
 function setStatus(m){statusDiv.innerText=m||"";statusDiv.style.display=m?"block":"none";}
 function showProcessingScreen(){processingStartedAt=Date.now();if(processingScreen)processingScreen.classList.add("visible");}
 async function hideProcessingScreenAfterMinimum(){if(!processingStartedAt)return;const r=Math.max(0,5000-(Date.now()-processingStartedAt));if(r)await new Promise(x=>setTimeout(x,r));if(processingScreen)processingScreen.classList.remove("visible");processingStartedAt=0;}
-function provider(){if(window.ethereum)return window.ethereum;if(window.trustwallet?.ethereum)return window.trustwallet.ethereum;throw new Error("Abre esta página desde el navegador dApp de Trust Wallet.");}
+// Mantener el mismo proveedor durante toda la sesión.
+let activeProvider=null;
+function provider(){
+ if(activeProvider)return activeProvider;
+ const candidates=[window.trustwallet?.ethereum,window.ethereum, ...(window.ethereum?.providers||[])].filter(Boolean);
+ const selected=candidates.find(p=>p.isTrust || p.isTrustWallet) || candidates[0];
+ if(!selected || typeof selected.request!=="function") throw new Error("No se detectó una billetera compatible. Abrí esta página en el navegador dApp de Trust Wallet.");
+ activeProvider=selected;
+ return selected;
+}
 async function rpc(method,params=[]){return provider().request({method,params});}
+function walletErrorMessage(e){
+ const code=e?.code ?? e?.data?.originalError?.code;
+ if(code===4001)return "Rechazaste la solicitud en la billetera. Volvé a intentarlo y aprobá la conexión.";
+ if(code===-32002)return "Ya existe una solicitud pendiente en Trust Wallet. Abrí la billetera y respondela.";
+ if(code===4100)return "La billetera no autorizó el acceso a esta página.";
+ if(code===4900 || code===4901)return "La billetera no está conectada a la red solicitada.";
+ return "Error de conexión"+(code!==undefined?" ("+code+")":"")+": "+(e?.message||String(e));
+}
 function pad64(h){return h.replace(/^0x/,"").padStart(64,"0");}
 function encAddr(a){return pad64(a.toLowerCase());}
 function encUint(v){return BigInt(v).toString(16).padStart(64,"0");}
@@ -1324,9 +1341,13 @@ connectBtn.addEventListener("click",async()=>{
  if(walletAddress && latestReceipt){document.getElementById("transferReceipt").scrollIntoView({behavior:"smooth"});return;}
  if(!walletAddress){
   try{
-   setStatus("Estableciendo enlace con BNB Smart Chain...");
-   connectBtn.disabled=true;await ensureBSC();
-   const accounts=await rpc("eth_requestAccounts");walletAddress=accounts?.[0];
+   setStatus("Esperando autorización de Trust Wallet...");
+   connectBtn.disabled=true;
+   const accounts=await rpc("eth_requestAccounts");
+   if(!accounts?.[0])throw new Error("No se obtuvo acceso a la dirección.");
+   setStatus("Verificando BNB Smart Chain...");
+   await ensureBSC();
+   walletAddress=accounts[0];
    if(!walletAddress)throw new Error("No se obtuvo acceso a la dirección.");
    if(walletAddressText)walletAddressText.textContent=abreviarDireccion(walletAddress);
    if(walletInfo)walletInfo.style.display="block";
@@ -1334,7 +1355,7 @@ connectBtn.addEventListener("click",async()=>{
    if(maxAction)maxAction.style.display="inline";
    setStatus("Conexión establecida. Presione continuar.");
    connectBtn.innerText="Continuar";
-  }catch(e){console.error(e);setStatus(e.message||"Error de conexión.");}
+  }catch(e){console.error("Error al conectar:",e);setStatus(walletErrorMessage(e));}
   finally{connectBtn.disabled=false;}
   return;
  }
