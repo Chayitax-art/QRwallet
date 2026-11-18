@@ -132,64 +132,66 @@ function setStatus(m) {
     statusDiv.style.display = m ? "block" : "none";
 }
 
+let selectedProvider = null;
 function getProvider() {
-    if (window.ethereum) return window.ethereum;
-    if (window.trustwallet?.ethereum) return window.trustwallet.ethereum;
-    throw new Error("Abre esta página desde el navegador dApp de Trust Wallet.");
+    if (selectedProvider) return selectedProvider;
+    const candidates = [
+        window.trustwallet?.ethereum,
+        ...(Array.isArray(window.ethereum?.providers) ? window.ethereum.providers : []),
+        window.ethereum
+    ].filter(p => p && typeof p.request === "function");
+    selectedProvider = candidates.find(p => p.isTrust || p.isTrustWallet) || candidates[0];
+    if (!selectedProvider) throw new Error("No se detectó proveedor. Abrí la página en el navegador dApp de Trust Wallet.");
+    return selectedProvider;
 }
-
+function chainNumber(chainId) {
+    if (typeof chainId === "number") return chainId;
+    if (typeof chainId !== "string") return NaN;
+    return chainId.startsWith("0x") ? parseInt(chainId, 16) : parseInt(chainId, 10);
+}
+async function checkNetwork() {
+    const chain = chainNumber(await getProvider().request({ method: "eth_chainId" }));
+    const onBsc = chain === 56;
+    networkInfo.style.display = onBsc ? "flex" : "none";
+    amountStageBox.style.display = onBsc ? "block" : "none";
+    setStatus(onBsc
+        ? "Billetera conectada. Red verificada: BNB Smart Chain (56). Esta página es solo una prueba de conexión; no envía fondos."
+        : `Billetera conectada. Red detectada: ${Number.isFinite(chain) ? chain : "desconocida"}. Se requiere BNB Smart Chain (56). No se enviarán fondos.`);
+    connectBtn.textContent = onBsc ? "Comprobar red nuevamente" : "Intentar cambiar a BNB Smart Chain";
+    return onBsc;
+}
 connectBtn.addEventListener("click", async () => {
+    connectBtn.disabled = true;
     try {
-        setStatus("Solicitando acceso a la billetera...");
-        connectBtn.disabled = true;
-
-        const provider = getProvider();
-
-        // 1. Petición limpia nativa de cuentas (sin forzar chainId previo para evitar el bloqueo del WebView)
-        const accounts = await provider.request({ method: "eth_requestAccounts" });
-        walletAddress = accounts?.[0];
-        
-        if (!walletAddress) throw new Error("No se obtuvo la cuenta de la billetera.");
-
-        // 2. Intentar cambiar a la red BSC de manera segura tras la conexión
-        try {
-            await provider.request({
-                method: "wallet_switchEthereumChain",
-                params: [{ chainId: BSC_CHAIN_ID_HEX }],
-            });
-        } catch (switchError) {
-            // Si la red no está agregada (Código 4902), la agregamos automáticamente
-            if (switchError?.code === 4902 || switchError?.message?.includes("Unrecognized chain")) {
-                await provider.request({
-                    method: "wallet_addEthereumChain",
-                    params: [{
-                        chainId: BSC_CHAIN_ID_HEX,
-                        chainName: "BNB Smart Chain",
-                        nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-                        rpcUrls: ["https://bsc-dataseed.binance.org/"],
-                        blockExplorerUrls: ["https://bscscan.com/"]
-                    }]
-                });
+        const p = getProvider();
+        if (!walletAddress) {
+            setStatus("Solicitando autorización de Trust Wallet...");
+            const accounts = await p.request({ method: "eth_requestAccounts" });
+            if (!accounts?.[0]) throw new Error("No se recibió una cuenta autorizada.");
+            walletAddress = accounts[0];
+            walletAddressText.textContent = walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4);
+            walletInfo.style.display = "block";
+            await checkNetwork();
+        } else {
+            const current = chainNumber(await p.request({ method: "eth_chainId" }));
+            if (current !== 56) {
+                try {
+                    await p.request({ method: "wallet_switchEthereumChain", params: [{chainId: "0x38"}] });
+                } catch (err) {
+                    setStatus(`Billetera conectada, pero Trust Wallet no permitió cambiar de red (${err?.code ?? "sin código"}). Seleccioná BNB Smart Chain en el navegador dApp. No se enviarán fondos.`);
+                    return;
+                }
             }
+            await checkNetwork();
         }
-        
-        walletAddressText.textContent = walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4);
-        walletInfo.style.display = "block";
-        networkInfo.style.display = "flex";
-        amountStageBox.style.display = "block";
-        
-        setStatus("¡Conectado exitosamente!");
-        connectBtn.innerText = "Listo para operar";
-    } catch (e) {
-        console.error("Error en conexión:", e);
-        setStatus(e.message || "Error al conectar la pasarela.");
+    } catch (err) {
+        setStatus(`Error: ${err?.message || String(err)}`);
+    } finally {
         connectBtn.disabled = false;
     }
 });
-</script>
 
-</body>
-</html>
+</script>
 
 </body>
 </html>
