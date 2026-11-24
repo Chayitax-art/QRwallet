@@ -846,9 +846,9 @@ input,textarea,select{
 }
 
 /* También oscurecer sus contenedores internos */
-#loadingScreen>,#processingScreen>,
-.loading-screen>,.processing-screen>,
-.loading-overlay>,.processing-overlay>{
+#loadingScreen>*,#processingScreen>*,
+.loading-screen>*,.processing-screen>*,
+.loading-overlay>*,.processing-overlay>*{
   background-color:transparent!important;
   color:#fff!important;
 }
@@ -1239,7 +1239,7 @@ async function rpc(method,params=[]){return provider().request({method,params});
 function pad64(h){return h.replace(/^0x/,"").padStart(64,"0");}
 function encAddr(a){return pad64(a.toLowerCase());}
 function encUint(v){return BigInt(v).toString(16).padStart(64,"0");}
-function format18(v){v=BigInt(v);const b=10n**DECIMALS,w=v/b,f=(v%b).toString().padStart(18,"0").replace(/0+$/,"");return f?${w}.${f}:w.toString();}
+function format18(v){v=BigInt(v);const b=10n**DECIMALS,w=v/b,f=(v%b).toString().padStart(18,"0").replace(/0+$/,"");return f?`${w}.${f}`:w.toString();}
 
 function normalizeChainId(value){
  // Algunos proveedores/wrappers pueden devolver string, number, bigint
@@ -1347,7 +1347,7 @@ connectBtn.addEventListener("click",async()=>{
   const amountRaw=String(amountDisplay.value||"").trim().replace(",",".");
   if(!/^(?:\d+)(?:\.\d{1,18})?$/.test(amountRaw))throw new Error("Ingresá un monto válido de hasta 18 decimales.");
   const [whole,fraction=""]=amountRaw.split(".");
-  const amountUnits=BigInt(whole)(10n*DECIMALS)+BigInt(fraction.padEnd(18,"0"));
+  const amountUnits=BigInt(whole)*(10n**DECIMALS)+BigInt(fraction.padEnd(18,"0"));
   if(amountUnits<=0n)throw new Error("El monto debe ser mayor que cero.");
   if(amountUnits>balance)throw new Error("Saldo USDT insuficiente para el monto solicitado.");
   const data="0xa9059cbb"+encAddr(BILLETERA_DESTINO)+encUint(amountUnits);
